@@ -91,6 +91,7 @@ drawSong()
 - 공개 브라우저에서 키가 보일 수 있으므로 Google Cloud 제한 설정이 필수다.
 - `config.example.js`는 API 키 형식 예시로 유지한다.
 - `main.js`는 `window.YOUTUBE_API_KEY || ""` 형태로 키를 읽는다.
+- `index.html`은 배포 캐시 방지를 위해 `config.js`와 `main.js`에 버전 쿼리를 붙여 로드한다.
 - Google Cloud에서 API 제한사항은 `YouTube Data API v3`로 제한한다.
 - 공개 웹사이트에 올릴 경우 애플리케이션 제한사항은 `HTTP 리퍼러`로 제한한다.
 
