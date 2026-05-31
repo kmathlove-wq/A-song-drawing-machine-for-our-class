@@ -1,29 +1,140 @@
-# 프로젝트 협업 규칙
+# 우리반 전용 노래 추첨기 — CLAUDE.md
 
-## 절약 규칙
+## 프로젝트 개요
+
+우리반에서 사용할 수 있는 정적 웹 기반 노래 추첨기.
+노래를 추가, 수정, 삭제할 때는 비밀번호를 입력해야 하며, 등록된 노래 중 하나를 무작위로 뽑는다.
+뽑힌 노래는 YouTube Data API로 가장 가까운 영상을 검색해 페이지 안에서 자동 재생을 시도한다.
+API 키가 없거나 검색/재생에 실패하면 `유튜브에서 찾기` 버튼으로 직접 검색할 수 있게 한다.
+
+## 파일 구조
+
+```text
+A-song-drawing-machine-for-our-class/
+├── index.html          # 앱 화면 구조, 결과 영역, 유튜브 iframe, 노래 목록 DOM
+├── main.js             # 비밀번호, 노래 CRUD, 랜덤 추첨, YouTube API 검색 로직
+├── sytle.css           # 전체 레이아웃, 버튼, 결과 박스, 목록, 유튜브 영역 스타일
+├── config.example.js   # API 키 예시 파일
+├── config.js           # 실제 API 키 파일, Git에 올리지 않음
+├── AGENTS.md           # Codex/Agent용 프로젝트 규칙
+└── CLAUDE.md           # Claude용 프로젝트 규칙
+```
+
+## 실행 방법
+
+정적 파일이라 `index.html`을 브라우저로 열면 기본 화면은 동작한다.
+다만 API 키 제한을 `HTTP 리퍼러`로 걸었거나 브라우저 정책 문제가 있으면 로컬 서버로 실행하는 편이 좋다.
+
+```bash
+npx serve .
+# 또는 VS Code Live Server 사용
+```
+
+## 기술 스택
+
+- HTML, CSS, Vanilla JavaScript
+- 빌드 툴 없음
+- 패키지 의존성 없음
+- 브라우저 `localStorage` 사용
+- YouTube Data API v3 사용
+
+## main.js 구조
+
+### 핵심 상수와 상태
+
+| 이름 | 설명 |
+|---|---|
+| `PASSWORD` | 노래 추가, 이름 변경, 삭제에 필요한 비밀번호. 현재 `1+1=1` |
+| `STORAGE_KEY` | localStorage 저장 키. `class-song-drawing-machine-songs` |
+| `YOUTUBE_API_KEY` | `config.js`의 `window.YOUTUBE_API_KEY`에서 읽는 YouTube API 키 |
+| `songs[]` | 등록된 노래 목록 배열 |
+
+### 주요 함수
+
+| 함수 | 설명 |
+|---|---|
+| `loadSongs()` | localStorage에서 노래 목록을 불러온다 |
+| `saveSongs()` | 현재 노래 목록을 localStorage에 저장한다 |
+| `checkPassword()` | `prompt()`로 비밀번호를 확인한다 |
+| `addSong()` | 비밀번호 확인 후 노래를 추가한다 |
+| `renameSong(index)` | 비밀번호 확인 후 노래 이름을 바꾼다 |
+| `deleteSong(index)` | 비밀번호 확인 후 노래를 삭제한다 |
+| `drawSong()` | 등록된 노래 중 하나를 랜덤으로 뽑고 유튜브 재생을 시도한다 |
+| `playYoutubeVideo(songName)` | YouTube API로 영상을 찾아 iframe 자동 재생을 시도한다 |
+| `findYoutubeVideo(songName)` | YouTube Data API `search` 엔드포인트를 호출한다 |
+| `renderSongs()` | 노래 목록 DOM을 다시 그린다 |
+
+## YouTube 동작 방식
+
+```text
+drawSong()
+├── songs[]에서 랜덤 노래 선택
+├── 결과 텍스트 갱신
+└── playYoutubeVideo(songName)
+    ├── API 키가 없으면 fallback 버튼 활성화
+    ├── YouTube Data API로 임베드 가능한 영상 검색
+    ├── 찾으면 iframe src 설정 후 자동 재생 시도
+    └── 실패하면 `유튜브에서 찾기` 버튼 활성화
+```
+
+## API 키 관리
+
+- 실제 키는 `config.js`에 둔다.
+- `config.js`는 `.gitignore`에 포함되어 GitHub에 올라가지 않는다.
+- GitHub에는 `config.example.js`만 올린다.
+- `main.js`는 `window.YOUTUBE_API_KEY || ""` 형태로 키를 읽는다.
+- Google Cloud에서 API 제한사항은 `YouTube Data API v3`로 제한한다.
+- 공개 웹사이트에 올릴 경우 애플리케이션 제한사항은 `HTTP 리퍼러`로 제한한다.
+
+## 화면 구성
+
+```text
+.app
+├── .draw-panel
+│   ├── 노래 추가 버튼
+│   ├── 결과 박스 (#pickedSong)
+│   ├── 노래 뽑기 버튼
+│   └── .youtube-box
+│       ├── #youtubePlayer
+│       └── #youtubeLink
+└── .list-panel
+    ├── 등록된 노래 수 (#songCount)
+    ├── 노래 목록 (#songList)
+    └── 빈 목록 안내 (#emptyMessage)
+```
+
+## 주의사항
+
+- `sytle.css` 파일명은 현재 오타처럼 보이지만 `index.html`에서 이 이름으로 연결되어 있으므로 임의로 바꾸지 않는다.
+- `config.js`는 민감한 API 키를 담으므로 커밋하지 않는다.
+- YouTube 자동 재생은 브라우저 정책 때문에 소리가 있는 상태에서 막힐 수 있다.
+- YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
+- 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
+
+## GitHub
+
+저장소: `https://github.com/kmathlove-wq/A-song-drawing-machine-for-our-class`
+브랜치: `main`
+
+사용자가 따로 업로드하지 말라고 하지 않으면 코드 변경 후 항상 커밋 + 푸시한다.
+푸시할 때 잘못된 환경 토큰을 피하려면 다음 명령을 사용한다.
+
+```bash
+env -u GITHUB_TOKEN -u GH_TOKEN git push origin main
+```
+
+## 작업 규칙
+
+### 절약 규칙
 
 - 이미 읽은 파일은 변경 가능성이 있을 때만 다시 확인한다.
 - 불필요한 도구 호출은 하지 않는다.
-- 독립적으로 실행 가능한 도구 호출은 동시에 실행한다.
+- 가능한 도구 호출은 동시에 실행한다.
 - 긴 출력은 필요한 범위만 잘라 확인한다.
 - 사용자가 이미 설명한 내용을 다시 반복하지 않는다.
 
-## 기타 규칙
+### 기타 규칙
 
 - 새로 알게 된 프로젝트 지식은 필요할 때 `AGENTS.md` 또는 `CLAUDE.md`에 반영한다.
 - `AGENTS.md`와 `CLAUDE.md`는 각각 200줄을 넘기지 않는다.
 - 사용자 요청 없이 기존 변경사항을 되돌리지 않는다.
-- 사용자가 따로 업로드하지 말라고 하지 않으면 작업 후 GitHub에 커밋하고 푸시한다.
-- 푸시할 때 잘못된 환경 토큰을 피하려면 `env -u GITHUB_TOKEN -u GH_TOKEN git push origin main`을 사용한다.
-
-## 현재 코드 정보
-
-- 이 프로젝트는 우리반 전용 노래 추첨기 정적 웹앱이다.
-- `index.html`은 추첨 화면, 유튜브 재생 영역, 등록된 노래 목록 구조를 담당한다.
-- `sytle.css`는 전체 레이아웃, 버튼, 결과 영역, 목록, 유튜브 영역 스타일을 담당한다.
-- `main.js`는 비밀번호 확인, 노래 추가/수정/삭제, 랜덤 추첨, localStorage 저장, YouTube Data API 검색과 임베드 재생을 담당한다.
-- 노래 추가, 이름 변경, 삭제 비밀번호는 `1+1=1`이다.
-- 노래 목록은 `localStorage`의 `class-song-drawing-machine-songs` 키에 저장된다.
-- 실제 YouTube API 키는 Git에 올리지 않는 `config.js`의 `window.YOUTUBE_API_KEY`에서 읽는다.
-- Git에는 예시 파일인 `config.example.js`만 올리고, `.gitignore`로 `config.js`를 제외한다.
-- API 키가 없거나 검색/재생에 실패하면 `유튜브에서 찾기` 버튼이 활성화된다.
