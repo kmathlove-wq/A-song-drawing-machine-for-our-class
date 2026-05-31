@@ -18,6 +18,8 @@ const modalTitle = document.querySelector("#modalTitle");
 const modalLabel = document.querySelector("#modalLabel");
 const modalInput = document.querySelector("#modalInput");
 const modalError = document.querySelector("#modalError");
+const modalActions = document.querySelector("#modalActions");
+const modalCancelBtn = document.querySelector("#modalCancelBtn");
 const modalConfirmBtn = document.querySelector("#modalConfirmBtn");
 
 let songs = loadSongs();
@@ -47,14 +49,34 @@ function openInputModal({ title, label, type = "text", value = "", confirmText =
     activeModalResolve = resolve;
     modalTitle.textContent = title;
     modalLabel.textContent = label;
+    modalLabel.hidden = false;
     modalInput.type = type;
     modalInput.value = value;
     modalInput.placeholder = "";
+    modalInput.hidden = false;
     modalError.textContent = "";
     modalConfirmBtn.textContent = confirmText;
+    modalCancelBtn.hidden = true;
+    modalActions.classList.remove("two-buttons");
     modalOverlay.hidden = false;
     document.body.classList.add("modal-open");
     requestAnimationFrame(() => modalInput.focus());
+  });
+}
+
+function openConfirmModal({ title, message, confirmText = "확인" }) {
+  return new Promise((resolve) => {
+    activeModalResolve = resolve;
+    modalTitle.textContent = title;
+    modalLabel.hidden = true;
+    modalInput.hidden = true;
+    modalError.textContent = message;
+    modalConfirmBtn.textContent = confirmText;
+    modalCancelBtn.hidden = false;
+    modalActions.classList.add("two-buttons");
+    modalOverlay.hidden = false;
+    document.body.classList.add("modal-open");
+    requestAnimationFrame(() => modalConfirmBtn.focus());
   });
 }
 
@@ -155,7 +177,11 @@ async function deleteSong(index) {
     return;
   }
 
-  const shouldDelete = confirm(`"${songs[index]}" 노래를 삭제할까요?`);
+  const shouldDelete = await openConfirmModal({
+    title: "노래를 삭제할까요?",
+    message: `"${songs[index]}" 노래가 목록에서 사라져요.`,
+    confirmText: "삭제"
+  });
 
   if (!shouldDelete) {
     return;
@@ -289,6 +315,7 @@ inputModal.addEventListener("submit", (event) => {
   closeInputModal(modalInput.value);
 });
 modalCloseBtn.addEventListener("click", () => closeInputModal(null));
+modalCancelBtn.addEventListener("click", () => closeInputModal(false));
 modalOverlay.addEventListener("click", (event) => {
   if (event.target === modalOverlay) {
     closeInputModal(null);
