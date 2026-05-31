@@ -78,7 +78,7 @@ drawSong()
 └── playYoutubeVideo(songName)
     ├── API 키가 없으면 fallback 버튼 활성화
     ├── YouTube Data API로 임베드 가능한 영상 검색
-    ├── 찾으면 iframe src 설정 후 자동 재생 시도
+    ├── 찾으면 iframe src 설정 후 음소거 자동 재생 시도
     └── 실패하면 `유튜브에서 찾기` 버튼 활성화
 ```
 
@@ -125,7 +125,7 @@ drawSong()
 
 - `sytle.css` 파일명은 현재 오타처럼 보이지만 `index.html`에서 이 이름으로 연결되어 있으므로 임의로 바꾸지 않는다.
 - `config.js`는 GitHub에 커밋하지 않는다. 배포 서버에 직접 둘 때도 Google Cloud에서 API/웹사이트 제한을 반드시 건다.
-- YouTube 자동 재생은 브라우저 정책 때문에 소리가 있는 상태에서 막힐 수 있다.
+- YouTube 자동 재생은 브라우저 정책 때문에 `mute=1`로 시작하며, 소리는 사용자가 영상에서 켠다.
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
 

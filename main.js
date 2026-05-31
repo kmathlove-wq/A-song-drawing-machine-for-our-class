@@ -255,8 +255,16 @@ async function playYoutubeVideo(songName) {
       return;
     }
 
-    youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    playerHint.textContent = `"${songName}" 영상을 자동 재생하고 있어요.`;
+    const embedParams = new URLSearchParams({
+      autoplay: "1",
+      mute: "1",
+      playsinline: "1",
+      rel: "0",
+      origin: window.location.origin
+    });
+
+    youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?${embedParams}`;
+    playerHint.textContent = `"${songName}" 영상을 음소거 상태로 자동 재생하고 있어요. 소리는 영상에서 켜 주세요.`;
   } catch (error) {
     youtubePlayer.hidden = true;
     if (error.message === "YOUTUBE_API_FORBIDDEN") {
