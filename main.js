@@ -11,8 +11,17 @@ const playerHint = document.querySelector("#playerHint");
 const songList = document.querySelector("#songList");
 const songCount = document.querySelector("#songCount");
 const emptyMessage = document.querySelector("#emptyMessage");
+const modalOverlay = document.querySelector("#modalOverlay");
+const inputModal = document.querySelector("#inputModal");
+const modalCloseBtn = document.querySelector("#modalCloseBtn");
+const modalTitle = document.querySelector("#modalTitle");
+const modalLabel = document.querySelector("#modalLabel");
+const modalInput = document.querySelector("#modalInput");
+const modalError = document.querySelector("#modalError");
+const modalConfirmBtn = document.querySelector("#modalConfirmBtn");
 
 let songs = loadSongs();
+let activeModalResolve = null;
 
 function loadSongs() {
   const savedSongs = localStorage.getItem(STORAGE_KEY);
@@ -33,14 +42,48 @@ function saveSongs() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
 }
 
-function checkPassword() {
-  const password = prompt("비밀번호를 입력하세요.");
+function openInputModal({ title, label, type = "text", value = "", confirmText = "확인" }) {
+  return new Promise((resolve) => {
+    activeModalResolve = resolve;
+    modalTitle.textContent = title;
+    modalLabel.textContent = label;
+    modalInput.type = type;
+    modalInput.value = value;
+    modalInput.placeholder = "";
+    modalError.textContent = "";
+    modalConfirmBtn.textContent = confirmText;
+    modalOverlay.hidden = false;
+    document.body.classList.add("modal-open");
+    requestAnimationFrame(() => modalInput.focus());
+  });
+}
+
+function closeInputModal(value = null) {
+  if (!activeModalResolve) {
+    return;
+  }
+
+  const resolve = activeModalResolve;
+  activeModalResolve = null;
+  modalOverlay.hidden = true;
+  document.body.classList.remove("modal-open");
+  resolve(value);
+}
+
+async function checkPassword() {
+  const password = await openInputModal({
+    title: "관리자 모드",
+    label: "비밀번호",
+    type: "password",
+    confirmText: "입장"
+  });
 
   if (password === null) {
     return false;
   }
 
   if (password !== PASSWORD) {
+    modalError.textContent = "";
     alert("비밀번호가 틀렸어요.");
     return false;
   }
@@ -52,12 +95,16 @@ function normalizeSongName(songName) {
   return songName.trim().replace(/\s+/g, " ");
 }
 
-function addSong() {
-  if (!checkPassword()) {
+async function addSong() {
+  if (!(await checkPassword())) {
     return;
   }
 
-  const songName = prompt("추가할 노래 이름을 입력하세요.");
+  const songName = await openInputModal({
+    title: "노래 추가",
+    label: "노래 이름",
+    confirmText: "저장"
+  });
 
   if (songName === null) {
     return;
@@ -75,12 +122,17 @@ function addSong() {
   renderSongs();
 }
 
-function renameSong(index) {
-  if (!checkPassword()) {
+async function renameSong(index) {
+  if (!(await checkPassword())) {
     return;
   }
 
-  const newName = prompt("새 노래 이름을 입력하세요.", songs[index]);
+  const newName = await openInputModal({
+    title: "이름 변경",
+    label: "새 노래 이름",
+    value: songs[index],
+    confirmText: "변경"
+  });
 
   if (newName === null) {
     return;
@@ -98,8 +150,8 @@ function renameSong(index) {
   renderSongs();
 }
 
-function deleteSong(index) {
-  if (!checkPassword()) {
+async function deleteSong(index) {
+  if (!(await checkPassword())) {
     return;
   }
 
@@ -232,6 +284,21 @@ function renderSongs() {
 
 addSongBtn.addEventListener("click", addSong);
 drawSongBtn.addEventListener("click", drawSong);
+inputModal.addEventListener("submit", (event) => {
+  event.preventDefault();
+  closeInputModal(modalInput.value);
+});
+modalCloseBtn.addEventListener("click", () => closeInputModal(null));
+modalOverlay.addEventListener("click", (event) => {
+  if (event.target === modalOverlay) {
+    closeInputModal(null);
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !modalOverlay.hidden) {
+    closeInputModal(null);
+  }
+});
 
 disableYoutubeFallback();
 youtubePlayer.hidden = true;
