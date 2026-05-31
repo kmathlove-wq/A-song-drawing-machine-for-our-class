@@ -93,7 +93,8 @@ drawSong()
 - `main.js`는 `window.YOUTUBE_API_KEY || ""` 형태로 키를 읽는다.
 - `index.html`은 배포 캐시 방지를 위해 `config.js`와 `main.js`에 버전 쿼리를 붙여 로드한다.
 - Google Cloud에서 API 제한사항은 `YouTube Data API v3`로 제한한다.
-- 공개 웹사이트에 올릴 경우 애플리케이션 제한사항은 `HTTP 리퍼러`로 제한한다.
+- 공개 웹사이트와 로컬 Live Server를 쓸 경우 애플리케이션 제한사항은 `HTTP 리퍼러`로 제한한다.
+- Live Server 테스트 주소가 바뀌면 Google Cloud 웹사이트 제한에 해당 origin을 추가해야 한다.
 
 ## 화면 구성
 

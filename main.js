@@ -257,8 +257,13 @@ async function playYoutubeVideo(songName) {
 
     youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
     playerHint.textContent = `"${songName}" 영상을 자동 재생하고 있어요.`;
-  } catch {
+  } catch (error) {
     youtubePlayer.hidden = true;
+    if (error.message === "YOUTUBE_API_FORBIDDEN") {
+      activateYoutubeFallback(songName, "현재 사이트 주소가 API 키 웹사이트 제한에 없어요. Google Cloud에 이 주소를 추가해 주세요.");
+      return;
+    }
+
     activateYoutubeFallback(songName, "영상 검색 중 오류가 났어요. 유튜브에서 직접 찾아 주세요.");
   }
 }
@@ -276,6 +281,10 @@ async function findYoutubeVideo(songName) {
   const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
 
   if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error("YOUTUBE_API_FORBIDDEN");
+    }
+
     throw new Error("YouTube search failed");
   }
 
