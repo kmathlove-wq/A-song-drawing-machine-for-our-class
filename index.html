@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리반 전용 노래 추첨기</title>
+  <link rel="stylesheet" href="sytle.css">
+</head>
+<body>
+  <main class="app">
+    <section class="draw-panel" aria-labelledby="app-title">
+      <div class="title-row">
+        <div>
+          <p class="eyebrow">우리반 전용</p>
+          <h1 id="app-title">노래 추첨기</h1>
+        </div>
+        <button id="addSongBtn" class="secondary-button" type="button">노래 추가</button>
+      </div>
+
+      <div class="result-box" aria-live="polite">
+        <span class="label">오늘 뽑힌 노래</span>
+        <strong id="pickedSong" class="waiting-text">아직 뽑지 않았어요</strong>
+      </div>
+
+      <button id="drawSongBtn" class="primary-button" type="button">노래 뽑기</button>
+
+      <div class="youtube-box">
+        <iframe
+          id="youtubePlayer"
+          class="youtube-player"
+          title="뽑힌 노래 유튜브 영상"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen>
+        </iframe>
+        <a id="youtubeLink" class="youtube-button disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">
+          유튜브에서 찾기
+        </a>
+        <p id="playerHint">노래를 뽑으면 찾은 영상이 자동으로 재생돼요.</p>
+      </div>
+    </section>
+
+    <section class="list-panel" aria-labelledby="song-list-title">
+      <div class="list-header">
+        <h2 id="song-list-title">등록된 노래</h2>
+        <span id="songCount">0곡</span>
+      </div>
+      <ul id="songList" class="song-list"></ul>
+      <p id="emptyMessage" class="empty-message">아직 등록된 노래가 없어요. 노래를 추가해 주세요.</p>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
