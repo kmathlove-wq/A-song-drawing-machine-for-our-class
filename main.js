@@ -72,7 +72,7 @@ function closeInputModal(value = null) {
 
 async function checkPassword() {
   const password = await openInputModal({
-    title: "관리자 모드",
+    title: "비밀번호 입력",
     label: "비밀번호",
     type: "password",
     confirmText: "입장"
@@ -101,7 +101,7 @@ async function addSong() {
   }
 
   const songName = await openInputModal({
-    title: "노래 추가",
+    title: "노래 이름 입력",
     label: "노래 이름",
     confirmText: "저장"
   });
@@ -128,7 +128,7 @@ async function renameSong(index) {
   }
 
   const newName = await openInputModal({
-    title: "이름 변경",
+    title: "새 노래 이름 입력",
     label: "새 노래 이름",
     value: songs[index],
     confirmText: "변경"
