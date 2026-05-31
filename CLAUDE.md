@@ -14,6 +14,7 @@ A-song-drawing-machine-for-our-class/
 ├── index.html          # 앱 화면 구조, 결과 영역, 유튜브 iframe, 노래 목록 DOM
 ├── main.js             # 비밀번호, 노래 CRUD, 랜덤 추첨, YouTube API 검색 로직
 ├── sytle.css           # 전체 레이아웃, 버튼, 결과 박스, 목록, 유튜브 영역 스타일
+├── favicon.svg         # 노란색 그라데이션 배경과 음표 모양 사이트 아이콘
 ├── config.example.js   # API 키 예시 파일
 ├── config.js           # 실제 API 키 파일, Git에 올리지 않음
 ├── AGENTS.md           # Codex/Agent용 프로젝트 규칙
