@@ -257,14 +257,13 @@ async function playYoutubeVideo(songName) {
 
     const embedParams = new URLSearchParams({
       autoplay: "1",
-      mute: "1",
       playsinline: "1",
       rel: "0",
       origin: window.location.origin
     });
 
     youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?${embedParams}`;
-    playerHint.textContent = `"${songName}" 영상을 음소거 상태로 자동 재생하고 있어요. 소리는 영상에서 켜 주세요.`;
+    playerHint.textContent = `"${songName}" 영상을 자동 재생하고 있어요. 소리가 막히면 영상의 재생 버튼을 눌러 주세요.`;
   } catch (error) {
     youtubePlayer.hidden = true;
     if (error.message === "YOUTUBE_API_FORBIDDEN") {
@@ -281,8 +280,11 @@ async function findYoutubeVideo(songName) {
     part: "snippet",
     type: "video",
     videoEmbeddable: "true",
-    maxResults: "1",
-    q: `${songName} 공식 뮤직비디오`,
+    videoCategoryId: "10",
+    maxResults: "10",
+    order: "relevance",
+    safeSearch: "none",
+    q: `${songName} official audio music`,
     key: YOUTUBE_API_KEY
   });
 
@@ -297,7 +299,61 @@ async function findYoutubeVideo(songName) {
   }
 
   const data = await response.json();
-  return data.items?.[0]?.id?.videoId || "";
+  const videos = data.items || [];
+  const bestVideo = videos
+    .map((video) => ({
+      video,
+      score: scoreYoutubeResult(songName, video.snippet)
+    }))
+    .sort((a, b) => b.score - a.score)[0];
+
+  return bestVideo?.video?.id?.videoId || "";
+}
+
+function scoreYoutubeResult(songName, snippet) {
+  const title = normalizeSearchText(snippet?.title || "");
+  const channel = normalizeSearchText(snippet?.channelTitle || "");
+  const queryWords = normalizeSearchText(songName).split(" ").filter(Boolean);
+  const badWords = ["news", "story", "shorts", "tiktok", "reaction", "interview", "cover", "karaoke", "live", "뉴스", "이야기", "리액션", "커버"];
+  const goodWords = ["official", "audio", "music", "video", "mv", "lyrics", "topic"];
+  let score = 0;
+
+  queryWords.forEach((word) => {
+    if (title.includes(word)) {
+      score += 8;
+    }
+
+    if (channel.includes(word)) {
+      score += 2;
+    }
+  });
+
+  if (title.includes(normalizeSearchText(songName))) {
+    score += 20;
+  }
+
+  goodWords.forEach((word) => {
+    if (title.includes(word) || channel.includes(word)) {
+      score += 3;
+    }
+  });
+
+  badWords.forEach((word) => {
+    if (title.includes(word) || channel.includes(word)) {
+      score -= 12;
+    }
+  });
+
+  return score;
+}
+
+function normalizeSearchText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
 }
 
 function renderSongs() {

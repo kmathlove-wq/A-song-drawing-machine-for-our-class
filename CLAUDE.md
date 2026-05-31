@@ -66,7 +66,8 @@ npx serve .
 | `openConfirmModal(options)` | 삭제 확인에 쓰는 커스텀 확인 모달을 연다 |
 | `openNoticeModal(options)` | 안내 메시지에 쓰는 커스텀 확인 모달을 연다 |
 | `playYoutubeVideo(songName)` | YouTube API로 영상을 찾아 iframe 자동 재생을 시도한다 |
-| `findYoutubeVideo(songName)` | YouTube Data API `search` 엔드포인트를 호출한다 |
+| `findYoutubeVideo(songName)` | YouTube Data API `search` 엔드포인트를 호출하고 후보를 점수화해 고른다 |
+| `scoreYoutubeResult(songName, snippet)` | 제목/채널 기준으로 공식 음원에 가까운 검색 결과에 높은 점수를 준다 |
 | `renderSongs()` | 노래 목록 DOM을 다시 그린다 |
 
 ## YouTube 동작 방식
@@ -77,8 +78,9 @@ drawSong()
 ├── 결과 텍스트 갱신
 └── playYoutubeVideo(songName)
     ├── API 키가 없으면 fallback 버튼 활성화
-    ├── YouTube Data API로 임베드 가능한 영상 검색
-    ├── 찾으면 iframe src 설정 후 음소거 자동 재생 시도
+    ├── YouTube Data API로 음악 카테고리의 임베드 가능한 영상 검색
+    ├── 후보 10개를 제목/채널 기준으로 점수화
+    ├── 찾으면 iframe src 설정 후 자동 재생 시도
     └── 실패하면 `유튜브에서 찾기` 버튼 활성화
 ```
 
@@ -125,7 +127,7 @@ drawSong()
 
 - `sytle.css` 파일명은 현재 오타처럼 보이지만 `index.html`에서 이 이름으로 연결되어 있으므로 임의로 바꾸지 않는다.
 - `config.js`는 GitHub에 커밋하지 않는다. 배포 서버에 직접 둘 때도 Google Cloud에서 API/웹사이트 제한을 반드시 건다.
-- YouTube 자동 재생은 브라우저 정책 때문에 `mute=1`로 시작하며, 소리는 사용자가 영상에서 켠다.
+- YouTube 자동 재생은 브라우저 정책에 따라 소리 있는 재생이 막힐 수 있다.
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
 
