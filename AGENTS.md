@@ -62,6 +62,7 @@ npx serve .
 | `drawSong()` | 등록된 노래 중 하나를 랜덤으로 뽑고 유튜브 재생을 시도한다 |
 | `openInputModal(options)` | 비밀번호, 노래 추가, 이름 변경에 쓰는 커스텀 입력 모달을 연다 |
 | `openConfirmModal(options)` | 삭제 확인에 쓰는 커스텀 확인 모달을 연다 |
+| `openNoticeModal(options)` | 안내 메시지에 쓰는 커스텀 확인 모달을 연다 |
 | `playYoutubeVideo(songName)` | YouTube API로 영상을 찾아 iframe 자동 재생을 시도한다 |
 | `findYoutubeVideo(songName)` | YouTube Data API `search` 엔드포인트를 호출한다 |
 | `renderSongs()` | 노래 목록 DOM을 다시 그린다 |

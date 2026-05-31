@@ -80,6 +80,10 @@ function openConfirmModal({ title, message, confirmText = "확인" }) {
   });
 }
 
+function openNoticeModal({ title, message, confirmText = "확인" }) {
+  return openConfirmModal({ title, message, confirmText });
+}
+
 function closeInputModal(value = null) {
   if (!activeModalResolve) {
     return;
@@ -194,7 +198,11 @@ async function deleteSong(index) {
 
 async function drawSong() {
   if (songs.length === 0) {
-    alert("먼저 노래를 추가해 주세요.");
+    await openNoticeModal({
+      title: "노래가 없어요",
+      message: "먼저 노래를 추가해 주세요.",
+      confirmText: "확인"
+    });
     return;
   }
 
