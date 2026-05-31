@@ -17,6 +17,7 @@ A-song-drawing-machine-for-our-class/
 ├── favicon.svg         # 노란색 그라데이션 배경과 음표 모양 사이트 아이콘
 ├── config.example.js   # API 키 예시 파일
 ├── config.js           # 실제 API 키 파일, Git에는 올리지 않고 배포 서버에 직접 둔다
+├── .github/workflows/pages.yml # GitHub Pages 배포 시 secret으로 config.js 생성
 ├── AGENTS.md           # Codex/Agent용 프로젝트 규칙
 └── CLAUDE.md           # Claude용 프로젝트 규칙
 ```
@@ -86,6 +87,7 @@ drawSong()
 - 실제 키는 `config.js`에 둔다.
 - `config.js`는 GitHub에 올리지 않는다.
 - 배포 사이트에서 API를 호출해야 하면 배포 서버의 사이트 루트에 `config.js`를 직접 업로드한다.
+- GitHub Pages 배포는 `YOUTUBE_API_KEY` 저장소 secret으로 `config.js`를 생성하는 workflow를 사용한다.
 - 공개 브라우저에서 키가 보일 수 있으므로 Google Cloud 제한 설정이 필수다.
 - `config.example.js`는 API 키 형식 예시로 유지한다.
 - `main.js`는 `window.YOUTUBE_API_KEY || ""` 형태로 키를 읽는다.

@@ -240,7 +240,7 @@ async function playYoutubeVideo(songName) {
 
   if (!YOUTUBE_API_KEY) {
     youtubePlayer.hidden = true;
-    activateYoutubeFallback(songName, "자동으로 영상을 찾으려면 main.js에 YouTube Data API 키가 필요해요.");
+    activateYoutubeFallback(songName, "자동으로 영상을 찾으려면 배포 설정의 YouTube Data API 키가 필요해요.");
     return;
   }
 
