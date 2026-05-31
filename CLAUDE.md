@@ -16,7 +16,7 @@ A-song-drawing-machine-for-our-class/
 ├── sytle.css           # 전체 레이아웃, 버튼, 결과 박스, 목록, 유튜브 영역 스타일
 ├── favicon.svg         # 노란색 그라데이션 배경과 음표 모양 사이트 아이콘
 ├── config.example.js   # API 키 예시 파일
-├── config.js           # 실제 API 키 파일, Git에 올리지 않음
+├── config.js           # 실제 API 키 파일, Git에는 올리지 않고 배포 서버에 직접 둔다
 ├── AGENTS.md           # Codex/Agent용 프로젝트 규칙
 └── CLAUDE.md           # Claude용 프로젝트 규칙
 ```
@@ -84,8 +84,10 @@ drawSong()
 ## API 키 관리
 
 - 실제 키는 `config.js`에 둔다.
-- `config.js`는 `.gitignore`에 포함되어 GitHub에 올라가지 않는다.
-- GitHub에는 `config.example.js`만 올린다.
+- `config.js`는 GitHub에 올리지 않는다.
+- 배포 사이트에서 API를 호출해야 하면 배포 서버의 사이트 루트에 `config.js`를 직접 업로드한다.
+- 공개 브라우저에서 키가 보일 수 있으므로 Google Cloud 제한 설정이 필수다.
+- `config.example.js`는 API 키 형식 예시로 유지한다.
 - `main.js`는 `window.YOUTUBE_API_KEY || ""` 형태로 키를 읽는다.
 - Google Cloud에서 API 제한사항은 `YouTube Data API v3`로 제한한다.
 - 공개 웹사이트에 올릴 경우 애플리케이션 제한사항은 `HTTP 리퍼러`로 제한한다.
@@ -118,7 +120,7 @@ drawSong()
 ## 주의사항
 
 - `sytle.css` 파일명은 현재 오타처럼 보이지만 `index.html`에서 이 이름으로 연결되어 있으므로 임의로 바꾸지 않는다.
-- `config.js`는 민감한 API 키를 담으므로 커밋하지 않는다.
+- `config.js`는 GitHub에 커밋하지 않는다. 배포 서버에 직접 둘 때도 Google Cloud에서 API/웹사이트 제한을 반드시 건다.
 - YouTube 자동 재생은 브라우저 정책 때문에 소리가 있는 상태에서 막힐 수 있다.
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
