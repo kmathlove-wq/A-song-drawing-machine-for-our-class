@@ -251,7 +251,7 @@ async function playYoutubeVideo(songName) {
 
     if (!videoId) {
       youtubePlayer.hidden = true;
-      activateYoutubeFallback(songName, "자동으로 찾지 못했어요. 유튜브에서 직접 찾아 주세요.");
+      activateYoutubeFallback(songName, "제목에 노래 이름이 있고 조회수 10만 이상인 영상을 찾지 못했어요.");
       return;
     }
 
@@ -281,7 +281,7 @@ async function findYoutubeVideo(songName) {
     type: "video",
     videoEmbeddable: "true",
     videoCategoryId: "10",
-    maxResults: "10",
+    maxResults: "25",
     order: "relevance",
     safeSearch: "none",
     q: `${songName} official audio music`,
@@ -300,14 +300,50 @@ async function findYoutubeVideo(songName) {
 
   const data = await response.json();
   const videos = data.items || [];
-  const bestVideo = videos
+  const videoIds = videos.map((video) => video.id?.videoId).filter(Boolean);
+  const videoDetails = await getYoutubeVideoDetails(videoIds);
+  const bestVideo = videoDetails
+    .filter((video) => isEligibleYoutubeVideo(songName, video))
     .map((video) => ({
       video,
       score: scoreYoutubeResult(songName, video.snippet)
     }))
     .sort((a, b) => b.score - a.score)[0];
 
-  return bestVideo?.video?.id?.videoId || "";
+  return bestVideo?.video?.id || "";
+}
+
+async function getYoutubeVideoDetails(videoIds) {
+  if (videoIds.length === 0) {
+    return [];
+  }
+
+  const params = new URLSearchParams({
+    part: "snippet,statistics",
+    id: videoIds.join(","),
+    key: YOUTUBE_API_KEY
+  });
+
+  const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`);
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error("YOUTUBE_API_FORBIDDEN");
+    }
+
+    throw new Error("YouTube video details failed");
+  }
+
+  const data = await response.json();
+  return data.items || [];
+}
+
+function isEligibleYoutubeVideo(songName, video) {
+  const title = normalizeSearchText(video?.snippet?.title || "");
+  const normalizedSongName = normalizeSearchText(songName);
+  const viewCount = Number(video?.statistics?.viewCount || 0);
+
+  return title.includes(normalizedSongName) && viewCount >= 100000;
 }
 
 function scoreYoutubeResult(songName, snippet) {

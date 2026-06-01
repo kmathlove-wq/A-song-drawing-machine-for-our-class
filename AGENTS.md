@@ -66,7 +66,9 @@ npx serve .
 | `openConfirmModal(options)` | 삭제 확인에 쓰는 커스텀 확인 모달을 연다 |
 | `openNoticeModal(options)` | 안내 메시지에 쓰는 커스텀 확인 모달을 연다 |
 | `playYoutubeVideo(songName)` | YouTube API로 영상을 찾아 iframe 자동 재생을 시도한다 |
-| `findYoutubeVideo(songName)` | YouTube Data API `search` 엔드포인트를 호출하고 후보를 점수화해 고른다 |
+| `findYoutubeVideo(songName)` | YouTube Data API로 후보를 찾고 조회수/제목 조건을 통과한 영상을 고른다 |
+| `getYoutubeVideoDetails(videoIds)` | `videos.list`로 후보 영상의 제목과 조회수 통계를 가져온다 |
+| `isEligibleYoutubeVideo(songName, video)` | 제목에 노래 이름이 있고 조회수 10만 이상인지 확인한다 |
 | `scoreYoutubeResult(songName, snippet)` | 제목/채널 기준으로 공식 음원에 가까운 검색 결과에 높은 점수를 준다 |
 | `renderSongs()` | 노래 목록 DOM을 다시 그린다 |
 
@@ -79,7 +81,9 @@ drawSong()
 └── playYoutubeVideo(songName)
     ├── API 키가 없으면 fallback 버튼 활성화
     ├── YouTube Data API로 음악 카테고리의 임베드 가능한 영상 검색
-    ├── 후보 10개를 제목/채널 기준으로 점수화
+    ├── 후보 25개의 상세 정보와 조회수 확인
+    ├── 제목에 노래 이름이 포함되고 조회수 10만 이상인 후보만 통과
+    ├── 통과한 후보를 제목/채널 기준으로 점수화
     ├── 찾으면 iframe src 설정 후 자동 재생 시도
     └── 실패하면 `유튜브에서 찾기` 버튼 활성화
 ```
