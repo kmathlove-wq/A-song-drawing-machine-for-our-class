@@ -33,14 +33,9 @@ jobs:
           fi
           {
             printf 'window.YOUTUBE_API_KEY = "%s";\n' "${YOUTUBE_API_KEY}"
-            printf 'window.GITHUB_OWNER = "kmathlove-wq";\n'
-            printf 'window.GITHUB_REPO = "A-song-drawing-machine-for-our-class";\n'
-            printf 'window.GITHUB_BRANCH = "main";\n'
-            printf 'window.GITHUB_WRITE_TOKEN = "%s";\n' "${GITHUB_WRITE_TOKEN}"
           } > config.js
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          GITHUB_WRITE_TOKEN: ${{ secrets.SONGS_WRITE_TOKEN }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

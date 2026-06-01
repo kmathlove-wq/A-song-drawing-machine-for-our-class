@@ -1,11 +1,6 @@
 const PASSWORD = "1+1=1";
 const STORAGE_KEY = "class-song-drawing-machine-songs";
-const SYNC_POLL_INTERVAL_MS = 3000;
 const YOUTUBE_API_KEY = window.YOUTUBE_API_KEY || "";
-const GITHUB_OWNER = window.GITHUB_OWNER || "";
-const GITHUB_REPO = window.GITHUB_REPO || "";
-const GITHUB_BRANCH = window.GITHUB_BRANCH || "main";
-const GITHUB_WRITE_TOKEN = window.GITHUB_WRITE_TOKEN || "";
 
 const addSongBtn = document.querySelector("#addSongBtn");
 const drawSongBtn = document.querySelector("#drawSongBtn");
@@ -30,24 +25,6 @@ const modalConfirmBtn = document.querySelector("#modalConfirmBtn");
 let songs = [];
 let activeModalResolve = null;
 
-function canSyncSongs() {
-  return Boolean(GITHUB_OWNER && GITHUB_REPO && GITHUB_WRITE_TOKEN);
-}
-
-async function loadSongs() {
-  const localSongs = getLocalSongs();
-
-  try {
-    const sharedSongs = await fetchSharedSongs();
-    storeSongsLocally(sharedSongs);
-    return sharedSongs;
-  } catch {
-    // Fall back to localStorage when offline or GitHub is unavailable.
-  }
-
-  return localSongs;
-}
-
 function getLocalSongs() {
   const savedSongs = localStorage.getItem(STORAGE_KEY);
 
@@ -63,30 +40,8 @@ function getLocalSongs() {
   }
 }
 
-async function fetchSharedSongs() {
-  const response = await fetch(`./songs.json?ts=${Date.now()}`, {
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    throw new Error("Shared songs fetch failed");
-  }
-
-  const sharedSongs = await response.json();
-
-  if (!Array.isArray(sharedSongs)) {
-    throw new Error("Shared songs must be an array");
-  }
-
-  return normalizeSongList(sharedSongs);
-}
-
 function storeSongsLocally(songListValue) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(songListValue));
-}
-
-function sameSongList(firstSongs, secondSongs) {
-  return JSON.stringify(firstSongs) === JSON.stringify(secondSongs);
 }
 
 function normalizeSongList(songListValue) {
@@ -118,63 +73,19 @@ function createSongId(name) {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}-${compactSearchText(normalizeSearchText(name))}`;
 }
 
-async function saveSongs(syncAction = null) {
+async function saveSongs() {
   storeSongsLocally(songs);
-
-  if (!canSyncSongs() || !syncAction) {
-    return;
-  }
-
-  const inputs = {
-    operation: syncAction.operation,
-    song_id: syncAction.song?.id || syncAction.songId || "",
-    song_name: syncAction.song?.name || syncAction.songName || ""
-  };
-
-  const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/update-songs.yml/dispatches`, {
-    method: "POST",
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${GITHUB_WRITE_TOKEN}`,
-      "Content-Type": "application/json",
-      "X-GitHub-Api-Version": "2022-11-28"
-    },
-    body: JSON.stringify({
-      ref: GITHUB_BRANCH,
-      inputs
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error("Song sync failed");
-  }
 }
 
 async function persistSongs(syncAction = null) {
   try {
-    await saveSongs(syncAction);
+    await saveSongs();
   } catch {
     await openNoticeModal({
-      title: "공유 저장 실패",
-      message: "이 브라우저에는 저장됐지만, 다른 컴퓨터에 반영하지 못했어요.",
+      title: "저장 실패",
+      message: "이 브라우저에 노래를 저장하지 못했어요.",
       confirmText: "확인"
     });
-  }
-}
-
-async function syncSongsFromSharedList() {
-  try {
-    const sharedSongs = await fetchSharedSongs();
-
-    if (sameSongList(songs, sharedSongs)) {
-      return;
-    }
-
-    songs = sharedSongs;
-    storeSongsLocally(songs);
-    renderSongs();
-  } catch {
-    // Keep the current view when shared sync is temporarily unavailable.
   }
 }
 
@@ -353,7 +264,7 @@ async function deleteSong(songId) {
   }
 
   songs = songs.filter((currentSong) => currentSong.id !== songId);
-  await persistSongs({ operation: "delete", songId });
+  await persistSongs({ operation: "delete", songId, songName: song.name });
   renderSongs();
 }
 
@@ -646,8 +557,5 @@ document.addEventListener("keydown", (event) => {
 
 disableYoutubeFallback();
 youtubePlayer.hidden = true;
-(async function init() {
-  songs = await loadSongs();
-  renderSongs();
-  window.setInterval(syncSongsFromSharedList, SYNC_POLL_INTERVAL_MS);
-})();
+songs = getLocalSongs();
+renderSongs();
