@@ -51,7 +51,7 @@ npx serve .
 | `PASSWORD` | 노래 추가, 이름 변경, 삭제에 필요한 비밀번호. 현재 `1+1=1` |
 | `STORAGE_KEY` | localStorage 저장 키. `class-song-drawing-machine-songs` |
 | `YOUTUBE_API_KEY` | `config.js`의 `window.YOUTUBE_API_KEY`에서 읽는 YouTube API 키 |
-| `songs[]` | 등록된 노래 목록 배열 |
+| `songs[]` | `{ id, name }` 형태의 등록된 노래 목록 배열 |
 | `GITHUB_WRITE_TOKEN` | `songs.json` 공유 저장을 위한 GitHub fine-grained token |
 
 ### 주요 함수
@@ -59,6 +59,7 @@ npx serve .
 | 함수 | 설명 |
 |---|---|
 | `loadSongs()` | `songs.json`에서 공유 노래 목록을 불러오고 실패 시 localStorage를 쓴다 |
+| `normalizeSongList(songListValue)` | 예전 문자열 배열과 새 객체 배열을 안정적인 `{ id, name }` 배열로 변환한다 |
 | `saveSongs()` | localStorage에 저장하고 가능하면 GitHub Actions로 `songs.json`을 업데이트한다 |
 | `persistSongs()` | 저장 실패 안내를 포함해 노래 목록을 저장한다 |
 | `checkPassword()` | `prompt()`로 비밀번호를 확인한다 |
@@ -142,6 +143,7 @@ drawSong()
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
 - 공유 저장은 `songs.json`을 기준으로 하며, 수정 시 `update-songs.yml` workflow를 호출한다.
+- 삭제/수정은 배열 인덱스가 아니라 노래 id 기준으로 처리한다.
 
 ## GitHub
 

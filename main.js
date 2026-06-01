@@ -42,8 +42,9 @@ async function loadSongs() {
         const sharedSongs = await response.json();
 
         if (Array.isArray(sharedSongs)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(sharedSongs));
-          return sharedSongs;
+          const normalizedSongs = normalizeSongList(sharedSongs);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedSongs));
+          return normalizedSongs;
         }
       }
     } catch {
@@ -59,10 +60,39 @@ async function loadSongs() {
 
   try {
     const parsedSongs = JSON.parse(savedSongs);
-    return Array.isArray(parsedSongs) ? parsedSongs : [];
+    return Array.isArray(parsedSongs) ? normalizeSongList(parsedSongs) : [];
   } catch {
     return [];
   }
+}
+
+function normalizeSongList(songListValue) {
+  return songListValue
+    .map((song) => {
+      if (typeof song === "string") {
+        const name = normalizeSongName(song);
+        return name ? createSong(name) : null;
+      }
+
+      if (song && typeof song === "object" && typeof song.name === "string") {
+        const name = normalizeSongName(song.name);
+        return name ? { id: String(song.id || createSongId(name)), name } : null;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function createSong(name) {
+  return {
+    id: createSongId(name),
+    name
+  };
+}
+
+function createSongId(name) {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}-${compactSearchText(normalizeSearchText(name))}`;
 }
 
 async function saveSongs() {
@@ -204,12 +234,27 @@ async function addSong() {
     return;
   }
 
-  songs.push(normalizedName);
+  songs.push(createSong(normalizedName));
   await persistSongs();
   renderSongs();
 }
 
-async function renameSong(index) {
+function findSongById(songId) {
+  return songs.find((song) => song.id === songId);
+}
+
+async function renameSong(songId) {
+  const song = findSongById(songId);
+
+  if (!song) {
+    await openNoticeModal({
+      title: "노래를 찾을 수 없어요",
+      message: "목록이 바뀐 것 같아요. 새로고침 후 다시 시도해 주세요.",
+      confirmText: "확인"
+    });
+    return;
+  }
+
   if (!(await checkPassword())) {
     return;
   }
@@ -217,7 +262,7 @@ async function renameSong(index) {
   const newName = await openInputModal({
     title: "새 노래 이름 입력",
     label: "새 노래 이름",
-    value: songs[index],
+    value: song.name,
     confirmText: "변경"
   });
 
@@ -232,19 +277,30 @@ async function renameSong(index) {
     return;
   }
 
-  songs[index] = normalizedName;
+  song.name = normalizedName;
   await persistSongs();
   renderSongs();
 }
 
-async function deleteSong(index) {
+async function deleteSong(songId) {
+  const song = findSongById(songId);
+
+  if (!song) {
+    await openNoticeModal({
+      title: "노래를 찾을 수 없어요",
+      message: "목록이 바뀐 것 같아요. 새로고침 후 다시 시도해 주세요.",
+      confirmText: "확인"
+    });
+    return;
+  }
+
   if (!(await checkPassword())) {
     return;
   }
 
   const shouldDelete = await openConfirmModal({
     title: "노래를 삭제할까요?",
-    message: `"${songs[index]}" 노래가 목록에서 사라져요.`,
+    message: `"${song.name}" 노래가 목록에서 사라져요.`,
     confirmText: "삭제"
   });
 
@@ -252,7 +308,7 @@ async function deleteSong(index) {
     return;
   }
 
-  songs.splice(index, 1);
+  songs = songs.filter((currentSong) => currentSong.id !== songId);
   await persistSongs();
   renderSongs();
 }
@@ -268,7 +324,7 @@ async function drawSong() {
   }
 
   const randomIndex = Math.floor(Math.random() * songs.length);
-  const selectedSong = songs[randomIndex];
+  const selectedSong = songs[randomIndex].name;
 
   pickedSongEl.textContent = selectedSong;
   pickedSongEl.classList.remove("waiting-text");
@@ -497,13 +553,13 @@ function renderSongs() {
   songCount.textContent = `${songs.length}곡`;
   emptyMessage.hidden = songs.length > 0;
 
-  songs.forEach((song, index) => {
+  songs.forEach((song) => {
     const item = document.createElement("li");
     item.className = "song-item";
 
     const name = document.createElement("span");
     name.className = "song-name";
-    name.textContent = song;
+    name.textContent = song.name;
 
     const actions = document.createElement("div");
     actions.className = "song-actions";
@@ -511,13 +567,13 @@ function renderSongs() {
     const renameButton = document.createElement("button");
     renameButton.type = "button";
     renameButton.textContent = "이름 변경";
-    renameButton.addEventListener("click", () => renameSong(index));
+    renameButton.addEventListener("click", () => renameSong(song.id));
 
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.textContent = "삭제";
     deleteButton.className = "danger-button";
-    deleteButton.addEventListener("click", () => deleteSong(index));
+    deleteButton.addEventListener("click", () => deleteSong(song.id));
 
     actions.append(renameButton, deleteButton);
     item.append(name, actions);

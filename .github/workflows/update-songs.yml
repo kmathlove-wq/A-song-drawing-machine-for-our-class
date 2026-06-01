@@ -26,8 +26,11 @@ jobs:
           node -e '
             const fs = require("fs");
             const songs = JSON.parse(process.env.SONGS_JSON);
-            if (!Array.isArray(songs) || songs.some((song) => typeof song !== "string")) {
-              throw new Error("songs must be a JSON array of strings");
+            const valid = Array.isArray(songs) && songs.every((song) => {
+              return song && typeof song === "object" && typeof song.id === "string" && typeof song.name === "string";
+            });
+            if (!valid) {
+              throw new Error("songs must be a JSON array of { id, name } objects");
             }
             fs.writeFileSync("songs.json", `${JSON.stringify(songs, null, 2)}\n`);
           '
