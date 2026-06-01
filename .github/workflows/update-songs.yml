@@ -3,9 +3,18 @@ name: Update songs
 on:
   workflow_dispatch:
     inputs:
+      operation:
+        description: add, rename, delete, or replace
+        required: false
+      song_id:
+        description: Stable song id
+        required: false
+      song_name:
+        description: Song name for add or rename
+        required: false
       songs:
-        description: JSON array of song names
-        required: true
+        description: Optional JSON array for legacy full-list replace
+        required: false
 
 permissions:
   contents: write
@@ -20,19 +29,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refresh branch
+        run: git pull --rebase origin main
 
       - name: Write songs
         run: |
           node -e '
             const fs = require("fs");
-            const songs = JSON.parse(process.env.SONGS_JSON);
             const normalizeText = (value) => String(value).trim().replace(/\s+/g, " ");
             const compact = (value) => normalizeText(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, "");
             const createId = (name, index) => `shared-${compact(name) || "song"}-${index}`;
-            if (!Array.isArray(songs)) {
-              throw new Error("songs must be an array");
-            }
-            const normalizedSongs = songs
+            const normalizeSongs = (songs) => songs
               .map((song, index) => {
                 if (typeof song === "string") {
                   const name = normalizeText(song);
@@ -45,9 +55,50 @@ jobs:
                 return null;
               })
               .filter(Boolean);
-            fs.writeFileSync("songs.json", `${JSON.stringify(normalizedSongs, null, 2)}\n`);
+
+            let currentSongs = [];
+            if (fs.existsSync("songs.json")) {
+              currentSongs = normalizeSongs(JSON.parse(fs.readFileSync("songs.json", "utf8")));
+            }
+
+            const operation = process.env.OPERATION || (process.env.SONGS_JSON ? "replace" : "");
+            const songId = process.env.SONG_ID || "";
+            const songName = normalizeText(process.env.SONG_NAME || "");
+            let nextSongs = currentSongs;
+
+            if (operation === "replace") {
+              const songs = JSON.parse(process.env.SONGS_JSON || "[]");
+              if (!Array.isArray(songs)) {
+                throw new Error("songs must be an array");
+              }
+              nextSongs = normalizeSongs(songs);
+            } else if (operation === "add") {
+              if (!songId || !songName) {
+                throw new Error("add requires song_id and song_name");
+              }
+              nextSongs = currentSongs.some((song) => song.id === songId)
+                ? currentSongs.map((song) => song.id === songId ? { id: songId, name: songName } : song)
+                : [...currentSongs, { id: songId, name: songName }];
+            } else if (operation === "rename") {
+              if (!songId || !songName) {
+                throw new Error("rename requires song_id and song_name");
+              }
+              nextSongs = currentSongs.map((song) => song.id === songId ? { ...song, name: songName } : song);
+            } else if (operation === "delete") {
+              if (!songId) {
+                throw new Error("delete requires song_id");
+              }
+              nextSongs = currentSongs.filter((song) => song.id !== songId);
+            } else {
+              throw new Error("unknown song operation");
+            }
+
+            fs.writeFileSync("songs.json", `${JSON.stringify(nextSongs, null, 2)}\n`);
           '
         env:
+          OPERATION: ${{ inputs.operation }}
+          SONG_ID: ${{ inputs.song_id }}
+          SONG_NAME: ${{ inputs.song_name }}
           SONGS_JSON: ${{ inputs.songs }}
 
       - name: Commit changes

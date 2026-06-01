@@ -140,13 +140,19 @@ function createSongId(name) {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}-${compactSearchText(normalizeSearchText(name))}`;
 }
 
-async function saveSongs() {
+async function saveSongs(syncAction = null) {
   storeSongsLocally(songs);
   markPendingSync();
 
-  if (!canSyncSongs()) {
+  if (!canSyncSongs() || !syncAction) {
     return;
   }
+
+  const inputs = {
+    operation: syncAction.operation,
+    song_id: syncAction.song?.id || syncAction.songId || "",
+    song_name: syncAction.song?.name || syncAction.songName || ""
+  };
 
   const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/update-songs.yml/dispatches`, {
     method: "POST",
@@ -158,9 +164,7 @@ async function saveSongs() {
     },
     body: JSON.stringify({
       ref: GITHUB_BRANCH,
-      inputs: {
-        songs: JSON.stringify(songs)
-      }
+      inputs
     })
   });
 
@@ -169,9 +173,9 @@ async function saveSongs() {
   }
 }
 
-async function persistSongs() {
+async function persistSongs(syncAction = null) {
   try {
-    await saveSongs();
+    await saveSongs(syncAction);
   } catch {
     await openNoticeModal({
       title: "공유 저장 실패",
@@ -305,8 +309,9 @@ async function addSong() {
     return;
   }
 
-  songs.push(createSong(normalizedName));
-  await persistSongs();
+  const newSong = createSong(normalizedName);
+  songs.push(newSong);
+  await persistSongs({ operation: "add", song: newSong });
   renderSongs();
 }
 
@@ -349,7 +354,7 @@ async function renameSong(songId) {
   }
 
   song.name = normalizedName;
-  await persistSongs();
+  await persistSongs({ operation: "rename", song });
   renderSongs();
 }
 
@@ -380,7 +385,7 @@ async function deleteSong(songId) {
   }
 
   songs = songs.filter((currentSong) => currentSong.id !== songId);
-  await persistSongs();
+  await persistSongs({ operation: "delete", songId });
   renderSongs();
 }
 

@@ -143,7 +143,8 @@ drawSong()
 - YouTube 자동 재생은 브라우저 정책에 따라 소리 있는 재생이 막힐 수 있다.
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
-- 공유 저장은 `songs.json`을 기준으로 하며, 수정 시 `update-songs.yml` workflow를 호출한다.
+- 공유 저장은 `songs.json`을 기준으로 하며, 수정 시 `update-songs.yml` workflow에 add/rename/delete 명령을 보낸다.
+- workflow는 현재 최신 `songs.json`을 기준으로 명령을 적용하므로 오래된 브라우저가 전체 목록을 덮어쓰지 않는다.
 - 화면을 켜둔 동안 10초마다 `songs.json`을 다시 확인해 실시간에 가깝게 반영한다.
 - 내가 방금 저장한 변경은 최대 2분 동안 원격의 오래된 목록으로 덮어쓰지 않는다.
 - 삭제/수정은 배열 인덱스가 아니라 노래 id 기준으로 처리한다.
