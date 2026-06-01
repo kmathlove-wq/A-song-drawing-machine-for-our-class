@@ -1,8 +1,6 @@
 const PASSWORD = "1+1=1";
 const STORAGE_KEY = "class-song-drawing-machine-songs";
-const PENDING_SYNC_KEY = "class-song-drawing-machine-pending-sync-at";
-const SYNC_POLL_INTERVAL_MS = 10000;
-const PENDING_SYNC_TIMEOUT_MS = 30000;
+const SYNC_POLL_INTERVAL_MS = 3000;
 const YOUTUBE_API_KEY = window.YOUTUBE_API_KEY || "";
 const GITHUB_OWNER = window.GITHUB_OWNER || "";
 const GITHUB_REPO = window.GITHUB_REPO || "";
@@ -41,12 +39,6 @@ async function loadSongs() {
 
   try {
     const sharedSongs = await fetchSharedSongs();
-
-    if (hasPendingSync() && localSongs.length > 0 && !sameSongList(localSongs, sharedSongs)) {
-      return localSongs;
-    }
-
-    clearPendingSync();
     storeSongsLocally(sharedSongs);
     return sharedSongs;
   } catch {
@@ -93,20 +85,6 @@ function storeSongsLocally(songListValue) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(songListValue));
 }
 
-function markPendingSync() {
-  localStorage.setItem(PENDING_SYNC_KEY, String(Date.now()));
-}
-
-function clearPendingSync() {
-  localStorage.removeItem(PENDING_SYNC_KEY);
-}
-
-function hasPendingSync() {
-  const pendingAt = Number(localStorage.getItem(PENDING_SYNC_KEY) || 0);
-
-  return pendingAt > 0 && Date.now() - pendingAt < PENDING_SYNC_TIMEOUT_MS;
-}
-
 function sameSongList(firstSongs, secondSongs) {
   return JSON.stringify(firstSongs) === JSON.stringify(secondSongs);
 }
@@ -142,7 +120,6 @@ function createSongId(name) {
 
 async function saveSongs(syncAction = null) {
   storeSongsLocally(songs);
-  markPendingSync();
 
   if (!canSyncSongs() || !syncAction) {
     return;
@@ -190,18 +167,11 @@ async function syncSongsFromSharedList() {
     const sharedSongs = await fetchSharedSongs();
 
     if (sameSongList(songs, sharedSongs)) {
-      clearPendingSync();
-      return;
-    }
-
-    if (hasPendingSync()) {
-      playerHint.textContent = "공유 목록 저장을 기다리는 중이에요.";
       return;
     }
 
     songs = sharedSongs;
     storeSongsLocally(songs);
-    clearPendingSync();
     renderSongs();
   } catch {
     // Keep the current view when shared sync is temporarily unavailable.
