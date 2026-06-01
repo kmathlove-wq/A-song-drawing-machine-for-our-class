@@ -71,9 +71,10 @@ npx serve .
 | `openNoticeModal(options)` | 안내 메시지에 쓰는 커스텀 확인 모달을 연다 |
 | `playYoutubeVideo(songName)` | YouTube API로 영상을 찾아 iframe 자동 재생을 시도한다 |
 | `findYoutubeVideo(songName)` | YouTube Data API로 후보를 찾고 조회수/제목 조건을 통과한 영상을 고른다 |
-| `getYoutubeVideoDetails(videoIds)` | `videos.list`로 후보 영상의 제목과 조회수 통계를 가져온다 |
-| `isEligibleYoutubeVideo(songName, video)` | 제목에 노래 이름이 있고 조회수 10만 이상인지 확인한다 |
+| `getYoutubeVideoDetails(videoIds)` | `videos.list`로 후보 영상의 제목, 조회수, 길이 정보를 가져온다 |
+| `isEligibleYoutubeVideo(songName, video)` | 제목에 노래 이름이 있고 조회수 10만 이상이며 길이 60초 이상인지 확인한다 |
 | `titleIncludesSongName(title, songName)` | 띄어쓰기 차이를 무시하고 제목 포함 여부를 확인한다 |
+| `parseYoutubeDuration(duration)` | YouTube ISO 8601 길이를 초 단위로 바꾼다 |
 | `scoreYoutubeResult(songName, snippet)` | 제목/채널 기준으로 공식 음원에 가까운 검색 결과에 높은 점수를 준다 |
 | `renderSongs()` | 노래 목록 DOM을 다시 그린다 |
 
@@ -87,7 +88,7 @@ drawSong()
     ├── API 키가 없으면 fallback 버튼 활성화
     ├── 등록된 노래 이름 그대로 YouTube Data API 검색
     ├── 후보 25개의 상세 정보와 조회수 확인
-    ├── 제목에 노래 이름이 포함되고 조회수 10만 이상인 후보만 통과
+    ├── 제목에 노래 이름이 포함되고 조회수 10만 이상, 길이 60초 이상인 후보만 통과
     ├── 제목 비교는 띄어쓰기 차이를 무시함
     ├── 통과한 후보를 제목/채널 기준으로 점수화
     ├── 찾으면 iframe src 설정 후 자동 재생 시도

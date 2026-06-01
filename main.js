@@ -379,7 +379,7 @@ async function getYoutubeVideoDetails(videoIds) {
   }
 
   const params = new URLSearchParams({
-    part: "snippet,statistics",
+    part: "snippet,statistics,contentDetails",
     id: videoIds.join(","),
     key: YOUTUBE_API_KEY
   });
@@ -400,8 +400,9 @@ async function getYoutubeVideoDetails(videoIds) {
 
 function isEligibleYoutubeVideo(songName, video) {
   const viewCount = Number(video?.statistics?.viewCount || 0);
+  const durationSeconds = parseYoutubeDuration(video?.contentDetails?.duration || "");
 
-  return titleIncludesSongName(video?.snippet?.title || "", songName) && viewCount >= 100000;
+  return titleIncludesSongName(video?.snippet?.title || "", songName) && viewCount >= 100000 && durationSeconds >= 60;
 }
 
 function titleIncludesSongName(title, songName) {
@@ -416,10 +417,18 @@ function titleIncludesSongName(title, songName) {
 function scoreYoutubeResult(songName, snippet) {
   const title = normalizeSearchText(snippet?.title || "");
   const channel = normalizeSearchText(snippet?.channelTitle || "");
+  const compactTitle = compactSearchText(title);
+  const compactSongName = compactSearchText(normalizeSearchText(songName));
   const queryWords = normalizeSearchText(songName).split(" ").filter(Boolean);
-  const badWords = ["news", "story", "shorts", "tiktok", "reaction", "interview", "cover", "karaoke", "live", "뉴스", "이야기", "리액션", "커버"];
+  const badWords = ["news", "story", "shorts", "tiktok", "reaction", "interview", "cover", "karaoke", "live", "incoming", "call", "전화", "놀이", "뉴스", "이야기", "리액션", "커버"];
   const goodWords = ["official", "audio", "music", "video", "mv", "lyrics", "topic"];
   let score = 0;
+
+  if (compactTitle === compactSongName) {
+    score += 80;
+  } else if (compactTitle.startsWith(compactSongName)) {
+    score += 45;
+  }
 
   queryWords.forEach((word) => {
     if (title.includes(word)) {
@@ -434,6 +443,12 @@ function scoreYoutubeResult(songName, snippet) {
   if (titleIncludesSongName(snippet?.title || "", songName)) {
     score += 20;
   }
+
+  if ((snippet?.title || "").includes("#")) {
+    score -= 18;
+  }
+
+  score -= Math.min(Math.max(title.length - normalizeSearchText(songName).length, 0), 40) * 0.25;
 
   goodWords.forEach((word) => {
     if (title.includes(word) || channel.includes(word)) {
@@ -461,6 +476,20 @@ function normalizeSearchText(text) {
 
 function compactSearchText(text) {
   return text.replace(/\s+/g, "");
+}
+
+function parseYoutubeDuration(duration) {
+  const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+
+  if (!match) {
+    return 0;
+  }
+
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const seconds = Number(match[3] || 0);
+
+  return hours * 3600 + minutes * 60 + seconds;
 }
 
 function renderSongs() {
