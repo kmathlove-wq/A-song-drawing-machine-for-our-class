@@ -2,7 +2,7 @@ const PASSWORD = "1+1=1";
 const STORAGE_KEY = "class-song-drawing-machine-songs";
 const PENDING_SYNC_KEY = "class-song-drawing-machine-pending-sync-at";
 const SYNC_POLL_INTERVAL_MS = 10000;
-const PENDING_SYNC_TIMEOUT_MS = 120000;
+const PENDING_SYNC_TIMEOUT_MS = 30000;
 const YOUTUBE_API_KEY = window.YOUTUBE_API_KEY || "";
 const GITHUB_OWNER = window.GITHUB_OWNER || "";
 const GITHUB_REPO = window.GITHUB_REPO || "";
@@ -39,20 +39,18 @@ function canSyncSongs() {
 async function loadSongs() {
   const localSongs = getLocalSongs();
 
-  if (GITHUB_OWNER && GITHUB_REPO) {
-    try {
-      const sharedSongs = await fetchSharedSongs();
+  try {
+    const sharedSongs = await fetchSharedSongs();
 
-      if (hasPendingSync() && localSongs.length > 0 && !sameSongList(localSongs, sharedSongs)) {
-        return localSongs;
-      }
-
-      clearPendingSync();
-      storeSongsLocally(sharedSongs);
-      return sharedSongs;
-    } catch {
-      // Fall back to localStorage when offline or GitHub is unavailable.
+    if (hasPendingSync() && localSongs.length > 0 && !sameSongList(localSongs, sharedSongs)) {
+      return localSongs;
     }
+
+    clearPendingSync();
+    storeSongsLocally(sharedSongs);
+    return sharedSongs;
+  } catch {
+    // Fall back to localStorage when offline or GitHub is unavailable.
   }
 
   return localSongs;
@@ -74,7 +72,9 @@ function getLocalSongs() {
 }
 
 async function fetchSharedSongs() {
-  const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/songs.json?ts=${Date.now()}`);
+  const response = await fetch(`./songs.json?ts=${Date.now()}`, {
+    cache: "no-store"
+  });
 
   if (!response.ok) {
     throw new Error("Shared songs fetch failed");
@@ -186,10 +186,6 @@ async function persistSongs(syncAction = null) {
 }
 
 async function syncSongsFromSharedList() {
-  if (!GITHUB_OWNER || !GITHUB_REPO) {
-    return;
-  }
-
   try {
     const sharedSongs = await fetchSharedSongs();
 
@@ -199,11 +195,13 @@ async function syncSongsFromSharedList() {
     }
 
     if (hasPendingSync()) {
+      playerHint.textContent = "공유 목록 저장을 기다리는 중이에요.";
       return;
     }
 
     songs = sharedSongs;
     storeSongsLocally(songs);
+    clearPendingSync();
     renderSongs();
   } catch {
     // Keep the current view when shared sync is temporarily unavailable.
