@@ -1,5 +1,8 @@
 const PASSWORD = "1+1=1";
 const STORAGE_KEY = "class-song-drawing-machine-songs";
+const PENDING_SYNC_KEY = "class-song-drawing-machine-pending-sync-at";
+const SYNC_POLL_INTERVAL_MS = 10000;
+const PENDING_SYNC_TIMEOUT_MS = 120000;
 const YOUTUBE_API_KEY = window.YOUTUBE_API_KEY || "";
 const GITHUB_OWNER = window.GITHUB_OWNER || "";
 const GITHUB_REPO = window.GITHUB_REPO || "";
@@ -34,24 +37,28 @@ function canSyncSongs() {
 }
 
 async function loadSongs() {
+  const localSongs = getLocalSongs();
+
   if (GITHUB_OWNER && GITHUB_REPO) {
     try {
-      const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/songs.json?ts=${Date.now()}`);
+      const sharedSongs = await fetchSharedSongs();
 
-      if (response.ok) {
-        const sharedSongs = await response.json();
-
-        if (Array.isArray(sharedSongs)) {
-          const normalizedSongs = normalizeSongList(sharedSongs);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedSongs));
-          return normalizedSongs;
-        }
+      if (hasPendingSync() && localSongs.length > 0 && !sameSongList(localSongs, sharedSongs)) {
+        return localSongs;
       }
+
+      clearPendingSync();
+      storeSongsLocally(sharedSongs);
+      return sharedSongs;
     } catch {
       // Fall back to localStorage when offline or GitHub is unavailable.
     }
   }
 
+  return localSongs;
+}
+
+function getLocalSongs() {
   const savedSongs = localStorage.getItem(STORAGE_KEY);
 
   if (!savedSongs) {
@@ -64,6 +71,44 @@ async function loadSongs() {
   } catch {
     return [];
   }
+}
+
+async function fetchSharedSongs() {
+  const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/songs.json?ts=${Date.now()}`);
+
+  if (!response.ok) {
+    throw new Error("Shared songs fetch failed");
+  }
+
+  const sharedSongs = await response.json();
+
+  if (!Array.isArray(sharedSongs)) {
+    throw new Error("Shared songs must be an array");
+  }
+
+  return normalizeSongList(sharedSongs);
+}
+
+function storeSongsLocally(songListValue) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(songListValue));
+}
+
+function markPendingSync() {
+  localStorage.setItem(PENDING_SYNC_KEY, String(Date.now()));
+}
+
+function clearPendingSync() {
+  localStorage.removeItem(PENDING_SYNC_KEY);
+}
+
+function hasPendingSync() {
+  const pendingAt = Number(localStorage.getItem(PENDING_SYNC_KEY) || 0);
+
+  return pendingAt > 0 && Date.now() - pendingAt < PENDING_SYNC_TIMEOUT_MS;
+}
+
+function sameSongList(firstSongs, secondSongs) {
+  return JSON.stringify(firstSongs) === JSON.stringify(secondSongs);
 }
 
 function normalizeSongList(songListValue) {
@@ -96,7 +141,8 @@ function createSongId(name) {
 }
 
 async function saveSongs() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+  storeSongsLocally(songs);
+  markPendingSync();
 
   if (!canSyncSongs()) {
     return;
@@ -132,6 +178,31 @@ async function persistSongs() {
       message: "이 브라우저에는 저장됐지만, 다른 컴퓨터에 반영하지 못했어요.",
       confirmText: "확인"
     });
+  }
+}
+
+async function syncSongsFromSharedList() {
+  if (!GITHUB_OWNER || !GITHUB_REPO) {
+    return;
+  }
+
+  try {
+    const sharedSongs = await fetchSharedSongs();
+
+    if (sameSongList(songs, sharedSongs)) {
+      clearPendingSync();
+      return;
+    }
+
+    if (hasPendingSync()) {
+      return;
+    }
+
+    songs = sharedSongs;
+    storeSongsLocally(songs);
+    renderSongs();
+  } catch {
+    // Keep the current view when shared sync is temporarily unavailable.
   }
 }
 
@@ -605,4 +676,5 @@ youtubePlayer.hidden = true;
 (async function init() {
   songs = await loadSongs();
   renderSongs();
+  window.setInterval(syncSongsFromSharedList, SYNC_POLL_INTERVAL_MS);
 })();

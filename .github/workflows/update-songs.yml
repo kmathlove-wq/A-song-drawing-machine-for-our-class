@@ -26,13 +26,26 @@ jobs:
           node -e '
             const fs = require("fs");
             const songs = JSON.parse(process.env.SONGS_JSON);
-            const valid = Array.isArray(songs) && songs.every((song) => {
-              return song && typeof song === "object" && typeof song.id === "string" && typeof song.name === "string";
-            });
-            if (!valid) {
-              throw new Error("songs must be a JSON array of { id, name } objects");
+            const normalizeText = (value) => String(value).trim().replace(/\s+/g, " ");
+            const compact = (value) => normalizeText(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, "");
+            const createId = (name, index) => `shared-${compact(name) || "song"}-${index}`;
+            if (!Array.isArray(songs)) {
+              throw new Error("songs must be an array");
             }
-            fs.writeFileSync("songs.json", `${JSON.stringify(songs, null, 2)}\n`);
+            const normalizedSongs = songs
+              .map((song, index) => {
+                if (typeof song === "string") {
+                  const name = normalizeText(song);
+                  return name ? { id: createId(name, index), name } : null;
+                }
+                if (song && typeof song === "object" && typeof song.name === "string") {
+                  const name = normalizeText(song.name);
+                  return name ? { id: String(song.id || createId(name, index)), name } : null;
+                }
+                return null;
+              })
+              .filter(Boolean);
+            fs.writeFileSync("songs.json", `${JSON.stringify(normalizedSongs, null, 2)}\n`);
           '
         env:
           SONGS_JSON: ${{ inputs.songs }}

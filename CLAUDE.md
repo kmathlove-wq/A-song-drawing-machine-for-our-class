@@ -59,6 +59,7 @@ npx serve .
 | 함수 | 설명 |
 |---|---|
 | `loadSongs()` | `songs.json`에서 공유 노래 목록을 불러오고 실패 시 localStorage를 쓴다 |
+| `syncSongsFromSharedList()` | 10초마다 공유 목록을 확인해 다른 컴퓨터의 추가/삭제/수정을 반영한다 |
 | `normalizeSongList(songListValue)` | 예전 문자열 배열과 새 객체 배열을 안정적인 `{ id, name }` 배열로 변환한다 |
 | `saveSongs()` | localStorage에 저장하고 가능하면 GitHub Actions로 `songs.json`을 업데이트한다 |
 | `persistSongs()` | 저장 실패 안내를 포함해 노래 목록을 저장한다 |
@@ -143,6 +144,8 @@ drawSong()
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
 - 공유 저장은 `songs.json`을 기준으로 하며, 수정 시 `update-songs.yml` workflow를 호출한다.
+- 화면을 켜둔 동안 10초마다 `songs.json`을 다시 확인해 실시간에 가깝게 반영한다.
+- 내가 방금 저장한 변경은 최대 2분 동안 원격의 오래된 목록으로 덮어쓰지 않는다.
 - 삭제/수정은 배열 인덱스가 아니라 노래 id 기준으로 처리한다.
 
 ## GitHub
