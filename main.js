@@ -341,7 +341,6 @@ async function findYoutubeVideo(songName) {
     part: "snippet",
     type: "video",
     videoEmbeddable: "true",
-    videoCategoryId: "10",
     maxResults: "25",
     order: "relevance",
     safeSearch: "none",
@@ -400,11 +399,18 @@ async function getYoutubeVideoDetails(videoIds) {
 }
 
 function isEligibleYoutubeVideo(songName, video) {
-  const title = normalizeSearchText(video?.snippet?.title || "");
-  const normalizedSongName = normalizeSearchText(songName);
   const viewCount = Number(video?.statistics?.viewCount || 0);
 
-  return title.includes(normalizedSongName) && viewCount >= 100000;
+  return titleIncludesSongName(video?.snippet?.title || "", songName) && viewCount >= 100000;
+}
+
+function titleIncludesSongName(title, songName) {
+  const normalizedTitle = normalizeSearchText(title);
+  const normalizedSongName = normalizeSearchText(songName);
+  const compactTitle = compactSearchText(normalizedTitle);
+  const compactSongName = compactSearchText(normalizedSongName);
+
+  return normalizedTitle.includes(normalizedSongName) || compactTitle.includes(compactSongName);
 }
 
 function scoreYoutubeResult(songName, snippet) {
@@ -425,7 +431,7 @@ function scoreYoutubeResult(songName, snippet) {
     }
   });
 
-  if (title.includes(normalizeSearchText(songName))) {
+  if (titleIncludesSongName(snippet?.title || "", songName)) {
     score += 20;
   }
 
@@ -451,6 +457,10 @@ function normalizeSearchText(text) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
+}
+
+function compactSearchText(text) {
+  return text.replace(/\s+/g, "");
 }
 
 function renderSongs() {
