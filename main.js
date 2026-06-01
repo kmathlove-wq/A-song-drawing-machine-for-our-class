@@ -284,7 +284,7 @@ async function findYoutubeVideo(songName) {
     maxResults: "25",
     order: "relevance",
     safeSearch: "none",
-    q: `${songName} official audio music`,
+    q: songName,
     key: YOUTUBE_API_KEY
   });
 

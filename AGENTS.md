@@ -80,7 +80,7 @@ drawSong()
 ├── 결과 텍스트 갱신
 └── playYoutubeVideo(songName)
     ├── API 키가 없으면 fallback 버튼 활성화
-    ├── YouTube Data API로 음악 카테고리의 임베드 가능한 영상 검색
+    ├── 등록된 노래 이름 그대로 YouTube Data API 검색
     ├── 후보 25개의 상세 정보와 조회수 확인
     ├── 제목에 노래 이름이 포함되고 조회수 10만 이상인 후보만 통과
     ├── 통과한 후보를 제목/채널 기준으로 점수화
