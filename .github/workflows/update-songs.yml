@@ -1,0 +1,47 @@
+name: Update songs
+
+on:
+  workflow_dispatch:
+    inputs:
+      songs:
+        description: JSON array of song names
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: songs
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write songs
+        run: |
+          node -e '
+            const fs = require("fs");
+            const songs = JSON.parse(process.env.SONGS_JSON);
+            if (!Array.isArray(songs) || songs.some((song) => typeof song !== "string")) {
+              throw new Error("songs must be a JSON array of strings");
+            }
+            fs.writeFileSync("songs.json", `${JSON.stringify(songs, null, 2)}\n`);
+          '
+        env:
+          SONGS_JSON: ${{ inputs.songs }}
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add songs.json
+          if git diff --cached --quiet; then
+            echo "No song changes"
+            exit 0
+          fi
+          git commit -m "Update shared songs"
+          git push

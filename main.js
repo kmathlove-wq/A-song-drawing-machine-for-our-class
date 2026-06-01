@@ -1,6 +1,10 @@
 const PASSWORD = "1+1=1";
 const STORAGE_KEY = "class-song-drawing-machine-songs";
 const YOUTUBE_API_KEY = window.YOUTUBE_API_KEY || "";
+const GITHUB_OWNER = window.GITHUB_OWNER || "";
+const GITHUB_REPO = window.GITHUB_REPO || "";
+const GITHUB_BRANCH = window.GITHUB_BRANCH || "main";
+const GITHUB_WRITE_TOKEN = window.GITHUB_WRITE_TOKEN || "";
 
 const addSongBtn = document.querySelector("#addSongBtn");
 const drawSongBtn = document.querySelector("#drawSongBtn");
@@ -22,10 +26,31 @@ const modalActions = document.querySelector("#modalActions");
 const modalCancelBtn = document.querySelector("#modalCancelBtn");
 const modalConfirmBtn = document.querySelector("#modalConfirmBtn");
 
-let songs = loadSongs();
+let songs = [];
 let activeModalResolve = null;
 
-function loadSongs() {
+function canSyncSongs() {
+  return Boolean(GITHUB_OWNER && GITHUB_REPO && GITHUB_WRITE_TOKEN);
+}
+
+async function loadSongs() {
+  if (GITHUB_OWNER && GITHUB_REPO) {
+    try {
+      const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/songs.json?ts=${Date.now()}`);
+
+      if (response.ok) {
+        const sharedSongs = await response.json();
+
+        if (Array.isArray(sharedSongs)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sharedSongs));
+          return sharedSongs;
+        }
+      }
+    } catch {
+      // Fall back to localStorage when offline or GitHub is unavailable.
+    }
+  }
+
   const savedSongs = localStorage.getItem(STORAGE_KEY);
 
   if (!savedSongs) {
@@ -40,8 +65,44 @@ function loadSongs() {
   }
 }
 
-function saveSongs() {
+async function saveSongs() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+
+  if (!canSyncSongs()) {
+    return;
+  }
+
+  const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/update-songs.yml/dispatches`, {
+    method: "POST",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${GITHUB_WRITE_TOKEN}`,
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    body: JSON.stringify({
+      ref: GITHUB_BRANCH,
+      inputs: {
+        songs: JSON.stringify(songs)
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Song sync failed");
+  }
+}
+
+async function persistSongs() {
+  try {
+    await saveSongs();
+  } catch {
+    await openNoticeModal({
+      title: "공유 저장 실패",
+      message: "이 브라우저에는 저장됐지만, 다른 컴퓨터에 반영하지 못했어요.",
+      confirmText: "확인"
+    });
+  }
 }
 
 function openInputModal({ title, label, type = "text", value = "", confirmText = "확인" }) {
@@ -144,7 +205,7 @@ async function addSong() {
   }
 
   songs.push(normalizedName);
-  saveSongs();
+  await persistSongs();
   renderSongs();
 }
 
@@ -172,7 +233,7 @@ async function renameSong(index) {
   }
 
   songs[index] = normalizedName;
-  saveSongs();
+  await persistSongs();
   renderSongs();
 }
 
@@ -192,7 +253,7 @@ async function deleteSong(index) {
   }
 
   songs.splice(index, 1);
-  saveSongs();
+  await persistSongs();
   renderSongs();
 }
 
@@ -446,4 +507,7 @@ document.addEventListener("keydown", (event) => {
 
 disableYoutubeFallback();
 youtubePlayer.hidden = true;
-renderSongs();
+(async function init() {
+  songs = await loadSongs();
+  renderSongs();
+})();

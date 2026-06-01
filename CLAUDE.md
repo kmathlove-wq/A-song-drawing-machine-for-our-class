@@ -15,9 +15,11 @@ A-song-drawing-machine-for-our-class/
 ├── main.js             # 비밀번호, 노래 CRUD, 랜덤 추첨, YouTube API 검색 로직
 ├── sytle.css           # 전체 레이아웃, 버튼, 결과 박스, 목록, 유튜브 영역 스타일
 ├── favicon.svg         # 노란색 그라데이션 배경과 음표 모양 사이트 아이콘
+├── songs.json          # 모든 컴퓨터가 공유하는 노래 목록
 ├── config.example.js   # API 키 예시 파일
 ├── config.js           # 실제 API 키 파일, Git에는 올리지 않고 배포 서버에 직접 둔다
 ├── .github/workflows/pages.yml # GitHub Pages 배포 시 secret으로 config.js 생성
+├── .github/workflows/update-songs.yml # 앱에서 노래 목록 변경 시 songs.json 업데이트
 ├── AGENTS.md           # Codex/Agent용 프로젝트 규칙
 └── CLAUDE.md           # Claude용 프로젝트 규칙
 ```
@@ -50,13 +52,15 @@ npx serve .
 | `STORAGE_KEY` | localStorage 저장 키. `class-song-drawing-machine-songs` |
 | `YOUTUBE_API_KEY` | `config.js`의 `window.YOUTUBE_API_KEY`에서 읽는 YouTube API 키 |
 | `songs[]` | 등록된 노래 목록 배열 |
+| `GITHUB_WRITE_TOKEN` | `songs.json` 공유 저장을 위한 GitHub fine-grained token |
 
 ### 주요 함수
 
 | 함수 | 설명 |
 |---|---|
-| `loadSongs()` | localStorage에서 노래 목록을 불러온다 |
-| `saveSongs()` | 현재 노래 목록을 localStorage에 저장한다 |
+| `loadSongs()` | `songs.json`에서 공유 노래 목록을 불러오고 실패 시 localStorage를 쓴다 |
+| `saveSongs()` | localStorage에 저장하고 가능하면 GitHub Actions로 `songs.json`을 업데이트한다 |
+| `persistSongs()` | 저장 실패 안내를 포함해 노래 목록을 저장한다 |
 | `checkPassword()` | `prompt()`로 비밀번호를 확인한다 |
 | `addSong()` | 비밀번호 확인 후 노래를 추가한다 |
 | `renameSong(index)` | 비밀번호 확인 후 노래 이름을 바꾼다 |
@@ -134,6 +138,7 @@ drawSong()
 - YouTube 자동 재생은 브라우저 정책에 따라 소리 있는 재생이 막힐 수 있다.
 - YouTube 검색 실패, API 키 없음, 할당량 초과 시 fallback 버튼이 활성화되어야 한다.
 - 노래 목록은 서버가 아니라 사용자의 브라우저 localStorage에 저장된다.
+- 공유 저장은 `songs.json`을 기준으로 하며, 수정 시 `update-songs.yml` workflow를 호출한다.
 
 ## GitHub
 
