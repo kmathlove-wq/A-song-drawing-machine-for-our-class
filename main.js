@@ -418,7 +418,7 @@ function isEligibleYoutubeVideo(songName, video) {
   const channel = video?.snippet?.channelTitle || "";
   const similarity = getTitleSimilarity(songName, title);
 
-  return viewCount >= 100000 && durationSeconds >= 60 && similarity >= 0.45 && !isLikelySchoolClassVideo(title, channel) && !isLikelyRepeatVideo(title, channel, durationSeconds);
+  return viewCount >= 100000 && durationSeconds >= 60 && durationSeconds <= 12 * 60 && similarity >= 0.45 && !isLikelySchoolClassVideo(title, channel) && !isLikelyRepeatVideo(title, channel, durationSeconds);
 }
 
 function titleIncludesSongName(title, songName) {
@@ -437,7 +437,7 @@ function scoreYoutubeResult(songName, video) {
   const compactTitle = compactSearchText(title);
   const compactSongName = compactSearchText(normalizeSearchText(songName));
   const queryWords = normalizeSearchText(songName).split(" ").filter(Boolean);
-  const badWords = ["news", "story", "shorts", "tiktok", "reaction", "interview", "cover", "karaoke", "live", "incoming", "call", "repeat", "loop", "extended", "전화", "놀이", "뉴스", "이야기", "리액션", "커버", "반복", "반복재생", "연속재생"];
+  const badWords = ["news", "story", "shorts", "tiktok", "reaction", "interview", "cover", "karaoke", "live", "incoming", "call", "repeat", "loop", "extended", "hour", "hours", "전화", "놀이", "뉴스", "이야기", "리액션", "커버", "반복", "반복재생", "연속재생", "무한재생", "한시간"];
   const goodWords = ["official", "audio", "music", "video", "mv", "lyrics", "topic"];
   const viewCount = Number(video?.statistics?.viewCount || 0);
   const similarity = getTitleSimilarity(songName, snippet?.title || "");
@@ -550,9 +550,10 @@ function isLikelySchoolClassVideo(title, channel) {
 function isLikelyRepeatVideo(title, channel, durationSeconds) {
   const text = normalizeSearchText(`${title} ${channel}`);
   const hasRepeatWord = /반복|반복재생|연속재생|무한재생|repeat|loop|extended/.test(text);
-  const hasHourWord = /\d+\s*시간|\d+\s*hour|hours?/.test(text);
+  const hasHourWord = /한\s*시간|두\s*시간|세\s*시간|\d+\s*시간|\d+\s*hour|hours?/.test(text);
+  const hasLongVersionWord = /시간\s*ver|hour\s*ver|long\s*ver|긴\s*버전|롱버전|long\s*version/.test(text);
 
-  return hasRepeatWord || (durationSeconds >= 20 * 60 && hasHourWord);
+  return hasRepeatWord || hasHourWord || hasLongVersionWord || durationSeconds > 12 * 60;
 }
 
 function normalizeSearchText(text) {

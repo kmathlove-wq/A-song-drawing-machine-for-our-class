@@ -70,7 +70,7 @@ npx serve .
 | `playYoutubeVideo(songName)` | YouTube API로 영상을 찾아 iframe 자동 재생을 시도한다 |
 | `findYoutubeVideo(songName)` | YouTube Data API로 후보를 찾고 조회수/제목 유사도 조건을 통과한 영상을 고른다 |
 | `getYoutubeVideoDetails(videoIds)` | `videos.list`로 후보 영상의 제목, 조회수, 길이 정보를 가져온다 |
-| `isEligibleYoutubeVideo(songName, video)` | 조회수 10만 이상, 길이 60초 이상, 제목 유사도 조건을 확인하고 학년/반/반복재생 영상을 제외한다 |
+| `isEligibleYoutubeVideo(songName, video)` | 조회수 10만 이상, 길이 60초~12분, 제목 유사도 조건을 확인하고 학년/반/반복재생 영상을 제외한다 |
 | `getTitleSimilarity(songName, title)` | 제목이 노래 이름과 얼마나 비슷한지 계산한다 |
 | `parseYoutubeDuration(duration)` | YouTube ISO 8601 길이를 초 단위로 바꾼다 |
 | `scoreYoutubeResult(songName, snippet)` | 제목/채널 기준으로 공식 음원에 가까운 검색 결과에 높은 점수를 준다 |
@@ -86,8 +86,8 @@ drawSong()
     ├── API 키가 없으면 fallback 버튼 활성화
     ├── 등록된 노래 이름 그대로 YouTube Data API 검색
     ├── 조회수순 후보 50개의 상세 정보와 조회수 확인
-    ├── 조회수 10만 이상, 길이 60초 이상, 제목 유사도 기준을 통과한 후보만 사용
-    ├── 학년/반 뮤직비디오처럼 보이는 학교 영상과 반복재생 영상은 제외
+    ├── 조회수 10만 이상, 길이 60초~12분, 제목 유사도 기준을 통과한 후보만 사용
+    ├── 학년/반 뮤직비디오처럼 보이는 학교 영상과 한시간/반복재생 영상은 제외
     ├── 통과한 후보를 제목 유사도/조회수/채널 기준으로 점수화
     ├── 찾으면 iframe src 설정 후 자동 재생 시도
     └── 실패하면 `유튜브에서 찾기` 버튼 활성화
