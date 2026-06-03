@@ -323,7 +323,7 @@ async function playYoutubeVideo(songName) {
 
     if (!videoId) {
       youtubePlayer.hidden = true;
-      activateYoutubeFallback(songName, "제목에 노래 이름이 있고 조회수 10만 이상인 영상을 찾지 못했어요.");
+      activateYoutubeFallback(songName, "비슷한 제목의 조회수 10만 이상 영상을 찾지 못했어요.");
       return;
     }
 
@@ -352,8 +352,8 @@ async function findYoutubeVideo(songName) {
     part: "snippet",
     type: "video",
     videoEmbeddable: "true",
-    maxResults: "25",
-    order: "relevance",
+    maxResults: "50",
+    order: "viewCount",
     safeSearch: "none",
     q: songName,
     key: YOUTUBE_API_KEY
@@ -377,7 +377,7 @@ async function findYoutubeVideo(songName) {
     .filter((video) => isEligibleYoutubeVideo(songName, video))
     .map((video) => ({
       video,
-      score: scoreYoutubeResult(songName, video.snippet)
+      score: scoreYoutubeResult(songName, video)
     }))
     .sort((a, b) => b.score - a.score)[0];
 
@@ -412,8 +412,11 @@ async function getYoutubeVideoDetails(videoIds) {
 function isEligibleYoutubeVideo(songName, video) {
   const viewCount = Number(video?.statistics?.viewCount || 0);
   const durationSeconds = parseYoutubeDuration(video?.contentDetails?.duration || "");
+  const title = video?.snippet?.title || "";
+  const channel = video?.snippet?.channelTitle || "";
+  const similarity = getTitleSimilarity(songName, title);
 
-  return titleIncludesSongName(video?.snippet?.title || "", songName) && viewCount >= 100000 && durationSeconds >= 60;
+  return viewCount >= 100000 && durationSeconds >= 60 && similarity >= 0.45 && !isLikelySchoolClassVideo(title, channel);
 }
 
 function titleIncludesSongName(title, songName) {
@@ -425,7 +428,8 @@ function titleIncludesSongName(title, songName) {
   return normalizedTitle.includes(normalizedSongName) || compactTitle.includes(compactSongName);
 }
 
-function scoreYoutubeResult(songName, snippet) {
+function scoreYoutubeResult(songName, video) {
+  const snippet = video?.snippet || {};
   const title = normalizeSearchText(snippet?.title || "");
   const channel = normalizeSearchText(snippet?.channelTitle || "");
   const compactTitle = compactSearchText(title);
@@ -433,7 +437,12 @@ function scoreYoutubeResult(songName, snippet) {
   const queryWords = normalizeSearchText(songName).split(" ").filter(Boolean);
   const badWords = ["news", "story", "shorts", "tiktok", "reaction", "interview", "cover", "karaoke", "live", "incoming", "call", "전화", "놀이", "뉴스", "이야기", "리액션", "커버"];
   const goodWords = ["official", "audio", "music", "video", "mv", "lyrics", "topic"];
+  const viewCount = Number(video?.statistics?.viewCount || 0);
+  const similarity = getTitleSimilarity(songName, snippet?.title || "");
   let score = 0;
+
+  score += similarity * 120;
+  score += Math.log10(Math.max(viewCount, 1)) * 35;
 
   if (compactTitle === compactSongName) {
     score += 80;
@@ -474,6 +483,66 @@ function scoreYoutubeResult(songName, snippet) {
   });
 
   return score;
+}
+
+function getTitleSimilarity(songName, title) {
+  if (titleIncludesSongName(title, songName)) {
+    return 1;
+  }
+
+  const compactTitle = compactSearchText(normalizeSearchText(title));
+  const compactSongName = compactSearchText(normalizeSearchText(songName));
+
+  if (!compactTitle || !compactSongName) {
+    return 0;
+  }
+
+  return diceCoefficient(compactSongName, compactTitle);
+}
+
+function diceCoefficient(firstText, secondText) {
+  if (firstText === secondText) {
+    return 1;
+  }
+
+  if (firstText.length < 2 || secondText.length < 2) {
+    return secondText.includes(firstText) || firstText.includes(secondText) ? 0.8 : 0;
+  }
+
+  const firstBigrams = getBigrams(firstText);
+  const secondBigrams = getBigrams(secondText);
+  const totalBigrams = firstBigrams.length + secondBigrams.length;
+  let matches = 0;
+
+  firstBigrams.forEach((bigram) => {
+    const index = secondBigrams.indexOf(bigram);
+
+    if (index !== -1) {
+      matches += 1;
+      secondBigrams.splice(index, 1);
+    }
+  });
+
+  return (2 * matches) / totalBigrams;
+}
+
+function getBigrams(text) {
+  const bigrams = [];
+
+  for (let index = 0; index < text.length - 1; index += 1) {
+    bigrams.push(text.slice(index, index + 2));
+  }
+
+  return bigrams;
+}
+
+function isLikelySchoolClassVideo(title, channel) {
+  const text = normalizeSearchText(`${title} ${channel}`);
+  const hasSchoolWord = /학교|초등학교|중학교|고등학교|학예회|졸업|축제|수행평가|발표|우리반|학급/.test(text);
+  const hasClassPattern = /\d+\s*학년|\d+\s*반|\d+\s*-\s*\d+/.test(text);
+  const hasMusicVideoWord = /뮤직비디오|music video|mv/.test(text);
+
+  return hasClassPattern && (hasSchoolWord || hasMusicVideoWord);
 }
 
 function normalizeSearchText(text) {
